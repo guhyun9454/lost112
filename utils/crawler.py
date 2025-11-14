@@ -18,7 +18,6 @@ warnings.filterwarnings('ignore')
 r = redis.Redis(
     host=cfg.REDIS_HOST,
     port=cfg.REDIS_PORT,
-    password=cfg.REDIS_PASSWORD,
     decode_responses=True
 )
 
