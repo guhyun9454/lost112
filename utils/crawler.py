@@ -1,6 +1,4 @@
 from bs4 import BeautifulSoup
-import boto3
-import redis
 import requests
 
 import json
@@ -13,21 +11,6 @@ import warnings
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import config as cfg
 warnings.filterwarnings('ignore')
-
-# Redis 객체 전역 생성
-r = redis.Redis(
-    host=cfg.REDIS_HOST,
-    port=cfg.REDIS_PORT,
-    decode_responses=True
-)
-
-
-def send_message(message: str):
-    """
-    Redis Stream에 단일 메시지를 XADD
-    """
-    # Stream 전송
-    r.xadd(cfg.REDIS_STREAM, message)
 
 
 def wait(url):
@@ -105,24 +88,15 @@ def toJson(file_name, data):
     # 중복 유실물 제거
     unique_data = list(OrderedDict((item['ID'], item) for item in data).values())
     
-    # S3 클라이언트 생성
-    s3 = boto3.client(
-        's3',
-        aws_access_key_id=cfg.S3_ACCESS_KEY,
-        aws_secret_access_key=cfg.S3_SECRET_KEY,
-        region_name=cfg.S3_REGION
-    )
-
-    # JSON 문자열로 변환 후 바이트로 인코딩
-    json_body = json.dumps(unique_data, ensure_ascii=False, indent=4).encode('utf-8')
-
-    # S3에 업로드 (덮어쓰기)
-    s3.put_object(
-        Bucket=cfg.S3_BUCKET_NAME,
-        Key=f"{file_name}",
-        Body=json_body,
-        ContentType='application/json'
-    )
+    # db 폴더가 없으면 생성
+    os.makedirs(cfg.ROOTDATA, exist_ok=True)
+    
+    # 로컬 파일에 저장
+    file_path = os.path.join(cfg.ROOTDATA, file_name)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(unique_data, f, ensure_ascii=False, indent=4)
+    
+    print(f'Data saved to {file_path}')
 
 
 class Crawler:
@@ -134,9 +108,6 @@ class Crawler:
         for id in ids:
             info = getInfo(id)
             self.info.append(info)
-
-            # Redis-stream에 실시간 전송
-            send_message(info)
     
     def saveJson(self):
         toJson(cfg.ALLDATA, self.info)
@@ -144,19 +115,14 @@ class Crawler:
 
 class Updater:
     def __init__(self):
-        # S3 클라이언트 설정
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=cfg.S3_ACCESS_KEY,
-            aws_secret_access_key=cfg.S3_SECRET_KEY,
-            region_name=cfg.S3_REGION
-        )
-
-        # S3에서 all.json 가져오기
-        key = f"{cfg.ALLDATA}"
-        resp = s3.get_object(Bucket=cfg.S3_BUCKET_NAME, Key=key)
-        body = resp['Body'].read().decode('utf-8')
-        self.data = json.loads(body)
+        # 로컬 파일에서 all.json 읽기
+        file_path = os.path.join(cfg.ROOTDATA, cfg.ALLDATA)
+        
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f'{file_path} 파일이 존재하지 않습니다. 먼저 전체 데이터를 크롤링하세요.')
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            self.data = json.load(f)
 
         # ID 목록 추출
         self.keys = [item['ID'] for item in self.data]
@@ -168,12 +134,10 @@ class Updater:
             info = getInfo(id)
             self.new_datas.append(info)
 
-            # Redis-stream에 실시간 전송
-            send_message(info)
-
         return True
     
     
     def makeNewJson(self):
-        updated_all_data = self.new_datas
+        # 기존 데이터와 새 데이터 합치기
+        updated_all_data = self.data + self.new_datas
         toJson(cfg.ALLDATA, updated_all_data)

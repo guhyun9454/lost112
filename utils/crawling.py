@@ -24,8 +24,9 @@ def crawl(option, date):
         crawlDetail(start)
         
     elif option == 'un':
-        assert not os.path.isfile(cfg.ROOTDATA), \
-            'Any file does not exist in datas directory. You should crawl all data first.'
+        file_path = os.path.join(cfg.ROOTDATA, cfg.ALLDATA)
+        assert os.path.isfile(file_path), \
+            f'{file_path} 파일이 존재하지 않습니다. 먼저 전체 데이터를 크롤링하세요.'
         updater = Updater()
         while True:
             ids = crawler.getIds(start)
