@@ -42,6 +42,7 @@ cmd에서 세 가지 옵션으로 크롤링 가능
   - 자동으로 해당 지역의 FD_LCT_CD 코드로 변환됩니다
 - `--place-code`: 장소 구분 코드 (예: `--place-code LL1003` 지하철, 지정 안하면 전체)
 - `--end-date`: 종료 날짜 (예: `--end-date 20241124`)
+- `--test`: 테스트 모드 (10페이지까지만 크롤링)
 
 #### 사용 예시
 ```bash
@@ -53,4 +54,7 @@ python main.py -o ad -d 20241117 --end-date 20241124 --place-code LL1003
 
 # 새로 업데이트된 경기도 지갑 데이터만 크롤링
 python main.py -o un --category 지갑 --region 경기도
+
+# 테스트 모드로 10페이지까지만 크롤링
+python main.py -o ca --test
 ```

@@ -16,6 +16,8 @@ parser.add_argument('--region', type=str,
                     help='습득 시군구 (예: 경기도)')
 parser.add_argument('--place-code', type=str,
                     help='장소 구분 코드 (예: LL1003 지하철, 지정 안하면 전체)')
+parser.add_argument('--test', action='store_true',
+                    help='테스트 모드: 10페이지까지만 크롤링')
 args = parser.parse_args()
 
 # 필터링 옵션 딕셔너리 생성
@@ -29,7 +31,9 @@ filters = {
 }
 
 print("Start Crawling")
+if args.test:
+    print("테스트 모드: 10페이지까지만 크롤링합니다")
 if args.category or args.category_code or args.region:
     print(f"필터링 옵션: 분류={args.category or args.category_code}, 지역={args.region}, 장소={args.place_code or '전체'}")
 
-crawling.crawl(args.option, filters)
+crawling.crawl(args.option, filters, test_mode=args.test)
