@@ -26,6 +26,13 @@ REGION_CODE_MAP = {
     # 나머지 지역은 나중에 추가 예정
 }
 
+# 최상위 분류 코드 매핑 (PRDT_CL_CD01)
+# 최상위 분류만 검색하기 위한 매핑
+CATEGORY_CODE_MAP = {
+    '지갑': 'PRH000',
+    # 나머지 카테고리는 나중에 추가 예정
+}
+
 
 def wait(url):
     isEscapeLoop = False
@@ -74,11 +81,18 @@ def getIds(page, filters=None):
     if filters.get('place_code'):
         params.append(f'PLACE_SE_CD={filters["place_code"]}')
     
-    # 물품 분류명
+    # 물품 분류명 (최상위 분류만 검색)
+    # category가 있으면 최상위 분류 코드로 변환하여 사용
     if filters.get('category'):
-        params.append(f'PRDT_CL_NM={filters["category"]}')
+        category_name = filters['category']
+        if category_name in CATEGORY_CODE_MAP:
+            # 최상위 분류 코드 사용 (하위 분류 제외)
+            params.append(f'PRDT_CL_CD01={CATEGORY_CODE_MAP[category_name]}')
+        else:
+            # 매핑에 없는 경우 기존 방식 사용 (PRDT_CL_NM)
+            params.append(f'PRDT_CL_NM={category_name}')
     
-    # 물품 대분류 코드
+    # 물품 대분류 코드 (직접 지정하는 경우)
     if filters.get('category_code'):
         params.append(f'PRDT_CL_CD01={filters["category_code"]}')
     
