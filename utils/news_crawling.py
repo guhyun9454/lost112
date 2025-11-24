@@ -5,8 +5,12 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
-import config as cfg
+import os
 from bs4 import BeautifulSoup
+
+# 설정 상수
+ROOT = os.path.dirname(os.path.dirname(__file__))
+ROOTDATA = os.path.join(ROOT, 'db')
 import requests
 
 import json
@@ -71,9 +75,9 @@ class Crawler:
 
     def save_to_json(self) -> None:
         """ 데이터를 JSON 파일로 저장하는 함수 """
-        os.makedirs("datas", exist_ok=True)  # datas 폴더 생성 (없다면 생성)
+        os.makedirs(ROOTDATA, exist_ok=True)  # db 폴더 생성 (없다면 생성)
         # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_path = os.path.join(cfg.ROOTDATA, f"subway_news_data.json")
+        file_path = os.path.join(ROOTDATA, f"subway_news_data.json")
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(self.total_datas, f, ensure_ascii=False, indent=4)
         print(f" {file_path}에 저장 완료.")

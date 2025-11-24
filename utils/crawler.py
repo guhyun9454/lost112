@@ -9,8 +9,14 @@ from collections import OrderedDict
 import warnings
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
-import config as cfg
 warnings.filterwarnings('ignore')
+
+# 설정 상수
+ROOT = os.path.dirname(os.path.dirname(__file__))
+ROOTDATA = os.path.join(ROOT, 'db')
+LOSTURL = 'https://www.lost112.go.kr'
+ALLDATA = 'all.json'
+DEFAULT_START_YMD = '20250118'
 
 
 def wait(url):
@@ -28,8 +34,57 @@ def wait(url):
             isEscapeLoop = True
 
 
-def getIds(page):
-    url = f'https://www.lost112.go.kr/find/findList.do?START_YMD={cfg.START_YMD}&PLACE_SE_CD=LL1003&pageIndex={page}'
+def getIds(page, filters=None):
+    """
+    페이지에서 유실물 ID 목록을 가져옵니다.
+    
+    Args:
+        page: 페이지 번호
+        filters: 필터링 옵션 딕셔너리
+            - start_date: 시작 날짜 (YYYYMMDD)
+            - end_date: 종료 날짜 (YYYYMMDD)
+            - category: 물품 분류명
+            - category_code: 물품 대분류 코드
+            - region: 습득 시군구
+            - place_code: 장소 구분 코드
+    """
+    if filters is None:
+        filters = {}
+    
+    # URL 파라미터 구성
+    params = []
+    
+    # 시작 날짜 (필수)
+    start_date = filters.get('start_date') or DEFAULT_START_YMD
+    params.append(f'START_YMD={start_date}')
+    
+    # 종료 날짜
+    if filters.get('end_date'):
+        params.append(f'END_YMD={filters["end_date"]}')
+    
+    # 장소 구분 코드
+    if filters.get('place_code'):
+        params.append(f'PLACE_SE_CD={filters["place_code"]}')
+    
+    # 물품 분류명
+    if filters.get('category'):
+        params.append(f'PRDT_CL_NM={filters["category"]}')
+    
+    # 물품 대분류 코드
+    if filters.get('category_code'):
+        params.append(f'PRDT_CL_CD01={filters["category_code"]}')
+    
+    # 습득 시군구
+    if filters.get('region'):
+        params.append(f'FD_SIGUNGU={filters["region"]}')
+    
+    # 습득 장소 코드
+    if filters.get('location_code'):
+        params.append(f'FD_LCT_CD={filters["location_code"]}')
+    
+    params.append(f'pageIndex={page}')
+    
+    url = f'https://www.lost112.go.kr/find/findList.do?{"&".join(params)}'
     soup = wait(url)
     ids = [i.find('td').text for i in soup.find('table', {'class': 'type01'}).find('tbody').find_all('tr')]
     return ids if ids != ['검색 결과가 없습니다.'] else []
@@ -63,7 +118,7 @@ def getInfo(id):
                 'lostStatus': infos[7],
                 'phone': infos[8],
                 'context': getText(soup),
-                'image': cfg.LOSTURL + soup.find('p', {'class': 'lost_img'}).find('img').get('src'),
+                'image': LOSTURL + soup.find('p', {'class': 'lost_img'}).find('img').get('src'),
                 'source': 'lost112',
                 'page': url
             } if len(infos) == 9 else \
@@ -78,7 +133,7 @@ def getInfo(id):
         'lostStatus': infos[6],
         'phone': infos[7],
         'context': getText(soup),
-        'image': cfg.LOSTURL + soup.find('p', {'class': 'lost_img'}).find('img').get('src'),
+        'image': LOSTURL + soup.find('p', {'class': 'lost_img'}).find('img').get('src'),
         'source': 'lost112',
         'page': url
     }
@@ -89,10 +144,10 @@ def toJson(file_name, data):
     unique_data = list(OrderedDict((item['ID'], item) for item in data).values())
     
     # db 폴더가 없으면 생성
-    os.makedirs(cfg.ROOTDATA, exist_ok=True)
+    os.makedirs(ROOTDATA, exist_ok=True)
     
     # 로컬 파일에 저장
-    file_path = os.path.join(cfg.ROOTDATA, file_name)
+    file_path = os.path.join(ROOTDATA, file_name)
     with open(file_path, 'w', encoding='utf-8') as f:
         json.dump(unique_data, f, ensure_ascii=False, indent=4)
     
@@ -109,14 +164,18 @@ class Crawler:
             info = getInfo(id)
             self.info.append(info)
     
-    def saveJson(self):
-        toJson(cfg.ALLDATA, self.info)
+    def saveJson(self, file_name=None):
+        if file_name is None:
+            file_name = ALLDATA
+        toJson(file_name, self.info)
 
 
 class Updater:
-    def __init__(self):
+    def __init__(self, file_name=None):
+        if file_name is None:
+            file_name = ALLDATA
         # 로컬 파일에서 all.json 읽기
-        file_path = os.path.join(cfg.ROOTDATA, cfg.ALLDATA)
+        file_path = os.path.join(ROOTDATA, file_name)
         
         if not os.path.exists(file_path):
             raise FileNotFoundError(f'{file_path} 파일이 존재하지 않습니다. 먼저 전체 데이터를 크롤링하세요.')
@@ -137,7 +196,9 @@ class Updater:
         return True
     
     
-    def makeNewJson(self):
+    def makeNewJson(self, file_name=None):
+        if file_name is None:
+            file_name = ALLDATA
         # 기존 데이터와 새 데이터 합치기
         updated_all_data = self.data + self.new_datas
-        toJson(cfg.ALLDATA, updated_all_data)
+        toJson(file_name, updated_all_data)
