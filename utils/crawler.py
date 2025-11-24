@@ -18,6 +18,14 @@ LOSTURL = 'https://www.lost112.go.kr'
 ALLDATA = 'all.json'
 DEFAULT_START_YMD = '20250118'
 
+# 지역 코드 매핑 (FD_LCT_CD)
+REGION_CODE_MAP = {
+    '서울특별시': 'LCA000',
+    '경기도': 'LCI000',
+    '강원도': 'LCH000',
+    # 나머지 지역은 나중에 추가 예정
+}
+
 
 def wait(url):
     isEscapeLoop = False
@@ -74,11 +82,17 @@ def getIds(page, filters=None):
     if filters.get('category_code'):
         params.append(f'PRDT_CL_CD01={filters["category_code"]}')
     
-    # 습득 시군구
+    # 습득 지역 코드 (region이 있으면 자동으로 FD_LCT_CD로 변환)
     if filters.get('region'):
-        params.append(f'FD_SIGUNGU={filters["region"]}')
+        region_name = filters['region']
+        if region_name in REGION_CODE_MAP:
+            location_code = REGION_CODE_MAP[region_name]
+            params.append(f'FD_LCT_CD={location_code}')
+        else:
+            # 매핑에 없는 경우 FD_SIGUNGU로 사용 (하위 호환성)
+            params.append(f'FD_SIGUNGU={region_name}')
     
-    # 습득 장소 코드
+    # 습득 장소 코드 (직접 지정하는 경우)
     if filters.get('location_code'):
         params.append(f'FD_LCT_CD={filters["location_code"]}')
     

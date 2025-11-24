@@ -37,7 +37,9 @@ cmd에서 세 가지 옵션으로 크롤링 가능
 
 - `--category`: 물품 분류명 (예: `--category 지갑`)
 - `--category-code`: 물품 대분류 코드 (예: `--category-code PRH000`)
-- `--region`: 습득 시군구 (예: `--region 경기도`)
+- `--region`: 습득 지역 (예: `--region 경기도`)
+  - 지원 지역: 서울특별시, 경기도, 강원도
+  - 자동으로 해당 지역의 FD_LCT_CD 코드로 변환됩니다
 - `--place-code`: 장소 구분 코드 (예: `--place-code LL1003` 지하철, 지정 안하면 전체)
 - `--end-date`: 종료 날짜 (예: `--end-date 20241124`)
 
