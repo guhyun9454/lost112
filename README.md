@@ -60,3 +60,22 @@ python main.py -o un --category 지갑 --region 경기도
 # 테스트 모드로 10페이지까지만 크롤링
 python main.py -o ca --test
 ```
+
+### 4. 유실물 지갑 검색
+크롤링한 데이터에서 자신의 지갑을 검색할 수 있습니다.
+
+#### 검색 옵션
+- `--name`: 이름으로 검색 (부분 일치)
+- `--keywords`: context에서 검색할 키워드 (쉼표로 구분)
+
+#### 사용 예시
+```bash
+# 이름으로 검색
+python search.py --name "홍길동"
+
+# 키워드로 검색 (국민카드, 운전면허증이 context에 포함된 지갑 찾기)
+python search.py --keywords "국민카드,운전면허증"
+
+# 이름과 키워드 모두 사용
+python search.py --name "홍길동" --keywords "국민카드,운전면허증"
+```
