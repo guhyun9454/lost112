@@ -19,11 +19,15 @@ def crawlDetail(start, filters=None, file_name=None, test_mode=False):
         start += 1
         if start % 10 == 0:
             print('----------------------{} pages crawled----------------------'.format(start))
+            # 10페이지마다 JSON 저장
+            crawl.saveJson(file_name)
         if test_mode and start > max_page:
             print(f'테스트 모드: {max_page}페이지까지 크롤링 완료')
             break
-        
-    crawl.saveJson(file_name)
+    
+    # 마지막에 한 번 더 저장 (10페이지 단위가 아닌 경우를 위해)
+    if (start - 1) % 10 != 0:
+        crawl.saveJson(file_name)
     
 
 def crawl(option, filters=None, file_name=None, test_mode=False):

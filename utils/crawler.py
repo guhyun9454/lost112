@@ -195,7 +195,20 @@ class Crawler:
     def saveJson(self, file_name=None):
         if file_name is None:
             file_name = ALLDATA
-        toJson(file_name, self.info)
+        
+        # 기존 파일이 있으면 읽어서 병합
+        file_path = os.path.join(ROOTDATA, file_name)
+        existing_data = []
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    existing_data = json.load(f)
+            except:
+                existing_data = []
+        
+        # 기존 데이터와 새 데이터 병합
+        all_data = existing_data + self.info
+        toJson(file_name, all_data)
 
 
 class Updater:
